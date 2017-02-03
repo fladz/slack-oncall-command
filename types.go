@@ -129,6 +129,7 @@ var (
 	helpFlush      string
 	helpRegister   string
 	helpUnregister string
+	helpUpdate     string
 )
 
 // Operation requestor name and id.
@@ -208,6 +209,12 @@ type opUnregister struct {
 	id string
 	// Requestor information.
 	by opRequestor
+}
+
+// Values needed for "update" operation.
+type opUpdate struct {
+	id   string
+	name string
 }
 
 // Sort function for the team list.

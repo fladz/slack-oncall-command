@@ -119,6 +119,8 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 		res = register(ctx, params)
 	case "unregister": // Remove a manager from a team.
 		res = unregister(ctx, params)
+	case "update":
+		res = update(ctx, params)
 	default: // Dump available operations and params.
 		w.Write([]byte(help(ctx, "")))
 		return
@@ -129,8 +131,6 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	if err = json.NewEncoder(w).Encode(res); err != nil {
 		w.Write([]byte(errorExternal))
 	}
-
-	//	fmt.Fprintf(w, res)
 } // }}}
 
 // func help {{{
@@ -157,8 +157,10 @@ func help(ctx context.Context, scope string) string {
 		str += helpRegister
 	case "unregister":
 		str += helpUnregister
+	case "update":
+		str += helpUpdate
 	default:
-		str += strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister}, "\n")
+		str += strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister, helpUpdate}, "\n")
 	}
 	return str
 } // }}}
@@ -208,7 +210,7 @@ func add(ctx context.Context, params interface{}) slackResponse {
 
 	res := slackResponse{}
 	// Make sure the requested staff exists.
-	u, err := getSlackUserDetail(ctx, p.id)
+	u, err := getSlackUserDetail(ctx, p.id, false)
 	if err != nil {
 		log.Warningf(ctx, "(add) error getting user %s - %s", p.name, err)
 		res.Text = errorExternal
@@ -488,7 +490,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 	res := slackResponse{}
 	// If the manager is provided, make sure the person exists.
 	if p.name != "" {
-		u, err := getSlackUserDetail(ctx, p.id)
+		u, err := getSlackUserDetail(ctx, p.id, false)
 		if err != nil {
 			log.Warningf(ctx, "(register) error getting user %s - %s", p.name, err)
 			res.Text = errorExternal
@@ -631,6 +633,27 @@ func unregister(ctx context.Context, params interface{}) slackResponse {
 	return res
 } // }}}
 
+// func update {{{
+
+// update
+//
+// Update the requstor's Slack user profile cache.
+func update(ctx context.Context, params interface{}) slackResponse {
+	p, ok := params.(opUpdate)
+	if !ok || p.id == "" || p.name == "" {
+		return slackResponse{Text: help(ctx, "update")}
+	}
+	u, err := getSlackUserDetail(ctx, p.id, true)
+	if err != nil {
+		log.Warningf(ctx, "(update) error getting user info %s - %s", p.name, err)
+		return slackResponse{Text: errorExternal}
+	}
+	if u == nil {
+		return slackResponse{Text: fmt.Sprintf("Sorry! You don't exist in Slack %s", humanErrorEmoji)}
+	}
+	return slackResponse{Text: "Success! Your information is now up to date!"}
+} // }}}
+
 // func listTeams {{{
 
 // Display manager(s) of each team the command manages.
@@ -649,7 +672,7 @@ func listTeams(ctx context.Context) slackResponse {
 		}
 		for _, manager := range r.Managers {
 			// Get user info.
-			if user, err = getSlackUserDetail(ctx, manager.Id); err != nil || user == nil || user.phone == "" {
+			if user, err = getSlackUserDetail(ctx, manager.Id, false); err != nil || user == nil || user.phone == "" {
 				str = append(str, fmt.Sprintf("%s: <@%s> %s", r.Team, manager.Name, errorNoPhone))
 			} else {
 				str = append(str, fmt.Sprintf("%s: <@%s> %s", strings.ToUpper(r.Team), manager.Name, user.phone))
@@ -759,7 +782,7 @@ func getCurrentManagerOncallList(ctx context.Context, row *oncallProperty) (chan
 
 	for idx, m := range row.Managers {
 		// Get info first.
-		user, err := getSlackUserDetail(ctx, m.Id)
+		user, err := getSlackUserDetail(ctx, m.Id, false)
 		if err == nil && user == nil {
 			// User doesn't exist in Slack, remove from list.
 			row.Managers = append(row.Managers[:idx], row.Managers[idx+1:]...)
@@ -785,7 +808,7 @@ func getCurrentOncallList(ctx context.Context, row *oncallProperty) (changed boo
 	}
 
 	for idx, u := range row.Rotations {
-		user, err := getSlackUserDetail(ctx, u.Id)
+		user, err := getSlackUserDetail(ctx, u.Id, false)
 		var userstr string
 		if err == nil && user == nil {
 			// User doesn't exist in Slack, remove from list.

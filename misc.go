@@ -88,6 +88,7 @@ func setHelpText() {
 	helpSwap = fmt.Sprintf("`%s swap {team} {position_a} {position_b}`\n\tSwap _position_a_ and _position_b_ in the on-call list for _team_", command)
 	helpRegister = fmt.Sprintf("`%s register {team} {@slackusername}`\n\tRegister a new _team_ with _@slackusername_ as it's manager", command)
 	helpUnregister = fmt.Sprintf("`%s unregister {team} {@slackusername}`\n\tUnregister _team_ from oncall command, or remove _@slackusername_ from _team_ manager list", command)
+	helpUpdate = fmt.Sprintf("`%s update`\n\tUpdate your Slack profile", command)
 } // }}}
 
 // func decodeOperationParams {{{
@@ -117,6 +118,8 @@ func decodeOperationParams(ctx context.Context, params slackCommandParams) (stri
 		return decodeRegisterParams(ctx, req, stuff)
 	case "unregister":
 		return decodeUnregisterParams(ctx, req, stuff)
+	case "update":
+		return decodeUpdateParams(ctx, req)
 	}
 
 	// Anything else including unsupported operations, just return help text.
@@ -316,6 +319,15 @@ func decodeUnregisterParams(ctx context.Context, r opRequestor, stuff []string) 
 		return op, nil, errorNoPerm
 	}
 	return op, values, ""
+} // }}}
+
+// func decodeUpdateParams {{{
+//
+// update
+//
+// This operation updates the requested user's Slack information.
+func decodeUpdateParams(ctx context.Context, r opRequestor) (string, interface{}, string) {
+	return "update", opUpdate{id: r.id, name: r.name}, ""
 } // }}}
 
 // func getCurrentRotation {{{

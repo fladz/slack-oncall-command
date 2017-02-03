@@ -53,7 +53,7 @@ func userIsExempt(ctx context.Context, id string) bool {
 	}
 
 	// Get user detail to check flags.
-	user, err := getSlackUserDetail(ctx, id)
+	user, err := getSlackUserDetail(ctx, id, false)
 	if err != nil {
 		log.Warningf(ctx, "error getting user detail (%s) - %s", id, err)
 		return false
@@ -141,11 +141,32 @@ func getSlackUser(ctx context.Context, id string) (*slackUser, error) {
 // Get detail of requested user.
 // First try finding the user in memory. If the user doesn't exist or the user data was retrieved
 // after the cache expiry, get the user information from Slack API.
-func getSlackUserDetail(ctx context.Context, id string) (*slackUser, error) {
+func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser, error) {
+	var err error
+
 	slackMut.RLock()
 	user := slackUsers[id]
 	slackMut.RUnlock()
-	var err error
+
+	// If force cache is requested, update the user information regardless of the
+	// cache age.
+	if force {
+		newuser, err := getSlackUser(ctx, id)
+		if err != nil {
+			return user, err
+		}
+		if newuser == nil {
+			return nil, nil
+		}
+		// Set new value in our user map.
+		if user != nil {
+			newuser.isSuperuser = user.isSuperuser
+		}
+		slackMut.Lock()
+		slackUsers[id] = newuser
+		slackMut.Unlock()
+		return user, nil
+	}
 
 	if user != nil {
 		// If the data is too old, refresh.
