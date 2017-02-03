@@ -36,7 +36,7 @@ This level of users can run all operations NORMAL users can run plus `add`, `rem
 This permission will be given to all Slack admins (member of @admins) by default. Individual *@slackusername* can also be given this permission level if the *@slackusername* is configured to be SUPERUSER. (See below "Configuration" section for more detail.) This level of users can run all operation MANAGER users can run plus `register`, `unregister` and `refresh_admins`.
 
 ## Configuration
-This application is made to run on Google AppEngine. Below is a configuration options to be used inside *env_variables* section in the .yaml file:
+Below is a configuration options to be used inside *env_variables* section in the .yaml file:
 
 | Key   | Required     | Description                                                             |
 |:------|:-------------|:------------------------------------------------------------------------|
@@ -50,6 +50,14 @@ This application is made to run on Google AppEngine. Below is a configuration op
 | timezone            | No  | Timezone used to display each on-call list's last updated timestamp. Default "UTC".
 | input_error_emoji   | No  | Custom emoji to be displayed along with brief error message when there is a problem with user input. Since default emoji is kind of boring, if you want to have some fun you can set your favorite emoji here! Default ":exclamation:".
 | external_error_emoji | No | Custom emoji to be displayed along with brief error message when there is a problem in external services (Slack API or Google Datastore). Since default emoji is kind of boring, if you want to have some fun you can set your favorite emoji here! Default ":negative_squared_cross_mark:".
+
+## Implementation Details
+This application is made to run on Google AppEngine, on-call details will be saved in Google Datastore. Google Datastore is used purely for backup purpose.
+
+This application manages on-call details and Slack user profiles in memory, when on-call list is updated it'll update both Google Datastore and memory, when on-call detail is queried it'll use in-memory data.
+
+Slack user profile information is cached in-memory. Currently it refreshes the cache when (1) the user data is accessed after cache expiration, or (2) *refresh* command is sent.
+
 
 ## Prerequisites
 
