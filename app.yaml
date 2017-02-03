@@ -1,0 +1,61 @@
+runtime: go
+api_version: go1
+
+# optional env vars to be used in source.
+env_variables:
+  # [Required]
+  # Token that will be used to verify incoming oncall requests are from trusted source.
+  slack_command_token: "SLACK_TOKEN"
+
+  # [Required]
+  # Token that will be used to communicate Slack API
+  slack_api_token: "SLACK_TOKEN"
+
+  # [Optional]
+  # The actual oncall command endpoint for this application.
+  # Default "/oncall"
+  #command_endpoint: "/oncall"
+
+  # [Optional]
+  # Per-operation timeout.
+  # Default 3 seconds
+  #operation_timeout: "3s"
+
+  # [Optional]
+  # Comma-separated list of Slack users.
+  # Users listed here will be given a "superuser" permission that allows to run all on-call operations.
+  # Make sure the names entered here are what's in Slack.
+  superusers: "fladz,example_user"
+
+  # [Optional]
+  # As a default, all Slack admin users will be given the superuser permission.
+  # In case you want to specify only certain users to have the permission, set this option to "true".
+  # Note: if "superusers" option above is NULL, this flag will be "false" even if you configured to be "true".
+  demote_admins: "true"
+
+  # [Optional]
+  # Duration to refresh Slack user cache.
+  # Default 3 days.
+  #cache_timeout: "3d"
+
+  # [Optional]
+  # Timezone used for on-call list updated date/time display.
+  # The name should be corresponding to a file in the IANA Time Zone database.
+  # Default "UTC".
+  #timezone: "UTC"
+
+  # [Optional]
+  # Custom emoji to use when underprivileged users try to run a command that requires
+  # a certain level of permission.
+  # Default is (a boring) :exclamation:
+  #input_error_emoji: ":exclamation:"
+
+  # [Optional]
+  # Custom emoji to use when unexpected error is returned from external sources (AppEngine,
+  # Datastore or Slack API).
+  # Default is (a boring) :negative_squared_cross_mark:
+  #external_error_emoji: ":negative_squared_cross_mark:"
+
+handlers:
+- url: /.*
+  script: _go_app
