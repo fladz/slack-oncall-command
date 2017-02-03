@@ -79,6 +79,25 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save the requestor's id so in case we need to show help text
+	// we know which operation(s) text need to be displayed.
+	ctx = context.WithValue(ctx, ctxKeyUserId, sr.UserId)
+
+	// If this is the first time called, get the current list of oncall rotation first.
+	if len(rotations) == 0 {
+		if err = loadState(ctx); err != nil {
+			log.Warningf(ctx, "error loading oncall state - %s", err)
+			w.Write([]byte(errorExternal))
+			return
+		}
+		// Loaded information, let's set "manager" flag to users.
+		if err = loadManagers(ctx); err != nil {
+			log.Warningf(ctx, "error loading managers - %s", err)
+			w.Write([]byte(errorExternal))
+			return
+		}
+	}
+
 	// Decode parameters passed.
 	operation, params, errstr := decodeOperationParams(ctx, sr)
 	if errstr != "" {
@@ -92,15 +111,6 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(errstr))
 		}
 		return
-	}
-
-	// If this is the first time called, get the current list of oncall rotation first.
-	if len(rotations) == 0 {
-		if err = loadState(ctx); err != nil {
-			log.Warningf(ctx, "error loading oncall state - %s", err)
-			w.Write([]byte(errorExternal))
-			return
-		}
 	}
 
 	var res slackResponse
@@ -142,27 +152,38 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 // or any of user input is invalid. (ie. missing parameters)
 func help(ctx context.Context, scope string) string {
 	str := "Usage:\n"
-	switch scope {
-	case "list":
-		str += helpList
-	case "add":
-		str += helpAdd
-	case "remove":
-		str += helpRemove
-	case "swap":
-		str += helpSwap
-	case "flush":
-		str += helpFlush
-	case "register":
-		str += helpRegister
-	case "unregister":
-		str += helpUnregister
-	case "update":
-		str += helpUpdate
-	default:
-		str += strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister, helpUpdate}, "\n")
+	if scope != "" {
+		switch scope {
+		case "list":
+			return str + helpList
+		case "add":
+			return str + helpAdd
+		case "remove":
+			return str + helpRemove
+		case "swap":
+			return str + helpSwap
+		case "flush":
+			return str + helpFlush
+		case "register":
+			return str + helpRegister
+		case "unregister":
+			return str + helpUnregister
+		case "update":
+			return str + helpUpdate
+		}
 	}
-	return str
+
+	// Display help text for commands this user has permission to.
+	id, ok := ctx.Value(ctxKeyUserId).(string)
+	if ok {
+		if userIsExempt(ctx, id) {
+			return str + strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister, helpUpdate}, "\n")
+		}
+		if userIsManager(ctx, id) {
+			return str + strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpUpdate}, "\n")
+		}
+	}
+	return str + strings.Join([]string{helpList, helpUpdate}, "\n")
 } // }}}
 
 // func list {{{
@@ -527,6 +548,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 			return res
 		} else {
 			res.Text = fmt.Sprintf("Success! New team %s registered, with manager <@%s>", p.team, p.name)
+			userAddManagerFlag(ctx, p.id)
 			return res
 		}
 	}
@@ -561,6 +583,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 		return res
 	}
 	res.Text = fmt.Sprintf("Success! <@%s> added as a manager of team %s", p.name, p.team)
+	userAddManagerFlag(ctx, p.id)
 	return res
 } // }}}
 
@@ -591,6 +614,11 @@ func unregister(ctx context.Context, params interface{}) slackResponse {
 		for i := 0; i < len(rotations); i++ {
 			if rotations[i].Team == p.team {
 				// This is the one to remove, delete from state first.
+				// Get list of managers of the team.
+				var managers = make([]string, len(rotations[i].Managers))
+				for i, m := range rotations[i].Managers {
+					managers[i] = m.Id
+				}
 				if err := deleteState(ctx, rotations[i].Key); err != nil {
 					log.Warningf(ctx, "(unregister) error deleting state - %s", err)
 					res.Text = errorExternal
@@ -599,6 +627,10 @@ func unregister(ctx context.Context, params interface{}) slackResponse {
 				// Deleted from state, let's delete from memory and return.
 				rotations = append(rotations[:i], rotations[i+1:]...)
 				res.Text = fmt.Sprintf("Success! Team %s removed from oncall command", p.team)
+				// Now remove "manager" flag from those users.
+				for _, i := range managers {
+					userSubManagerFlag(ctx, i)
+				}
 				return res
 			}
 		}
@@ -625,6 +657,8 @@ func unregister(ctx context.Context, params interface{}) slackResponse {
 				return res
 			}
 			res.Text = fmt.Sprintf("Success! Manager <@%s> removed as a manager from team %s", p.name, p.team)
+			// Remove the manager flag from this person as well.
+			userSubManagerFlag(ctx, p.id)
 			return res
 		}
 	}

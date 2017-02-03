@@ -1,6 +1,7 @@
 package slackoncallbot
 
 import (
+	"errors"
 	"github.com/nlopes/slack"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
@@ -37,6 +38,24 @@ func userHasPerm(ctx context.Context, id, team string) bool {
 	}
 
 	return false
+} // }}}
+
+// func userIsManager {{{
+
+// Check if the requested user is a manager of any team.
+func userIsManager(ctx context.Context, id string) bool {
+	u, err := getSlackUserDetail(ctx, id, false)
+	if err != nil {
+		log.Infof(ctx, "error getting user info (%s) - %s", id, err)
+		return false
+	}
+	if u == nil {
+		return false
+	}
+	if u.isManager == 0 {
+		return false
+	}
+	return true
 } // }}}
 
 // func userIsExempt {{{
@@ -161,6 +180,7 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 		// Set new value in our user map.
 		if user != nil {
 			newuser.isSuperuser = user.isSuperuser
+			newuser.isManager = user.isManager
 		}
 		slackMut.Lock()
 		slackUsers[id] = newuser
@@ -179,6 +199,7 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 			}
 			// Reset the map value.
 			newuser.isSuperuser = user.isSuperuser
+			newuser.isManager = user.isManager
 			slackMut.Lock()
 			slackUsers[id] = newuser
 			slackMut.Unlock()
@@ -246,5 +267,55 @@ func loadSuperusers(ctx context.Context) error {
 		}
 	}
 
+	return nil
+} // }}}
+
+// func userAddManagerFlag {{{
+
+func userAddManagerFlag(ctx context.Context, id string) error {
+	u, err := getSlackUserDetail(ctx, id, false)
+	if err != nil {
+		return err
+	}
+	if u == nil {
+		return errors.New(errorNoProfile)
+	}
+	slackMut.Lock()
+	u.isManager += 1
+	slackMut.Unlock()
+	return nil
+} // }}}
+
+// func userSubManagerFlag {{{
+
+func userSubManagerFlag(ctx context.Context, id string) error {
+	u, err := getSlackUserDetail(ctx, id, false)
+	if err != nil {
+		return err
+	}
+	if u == nil {
+		return errors.New(errorNoProfile)
+	}
+	slackMut.Lock()
+	slackUsers[id].isManager -= 1
+	slackMut.Unlock()
+	return nil
+} // }}}
+
+// func loadManagers {{{
+
+// Pre-query Slack profile of the managers, then set manager flag.
+func loadManagers(ctx context.Context) error {
+	oncallMut.RLock()
+	defer oncallMut.RUnlock()
+	for _, r := range rotations {
+		if len(r.Managers) > 0 {
+			for _, m := range r.Managers {
+				if err := userAddManagerFlag(ctx, m.Id); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 } // }}}

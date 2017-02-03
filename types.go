@@ -54,6 +54,7 @@ type slackUser struct {
 	name        string
 	isSuperuser bool
 	isAdmin     bool
+	isManager   int
 	phone       string
 	// Timestamp of the user retrieved from Slack API
 	retrieved time.Time
@@ -247,3 +248,8 @@ var (
 	// Requested team has no oncall rotation yet
 	errorNoRotation string
 )
+
+// Context key
+type ctxKey int
+
+const ctxKeyUserId ctxKey = 1

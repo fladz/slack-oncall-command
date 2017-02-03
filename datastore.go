@@ -12,10 +12,13 @@ import (
 func loadState(ctx context.Context) error {
 	// Get list of teams we support from datastore.
 	q := datastore.NewQuery(oncallKind)
+	oncallMut.Lock()
+	defer oncallMut.Unlock()
 	if _, err := q.GetAll(ctx, &rotations); err != nil {
 		return err
 	}
 	sort.Sort(rotations)
+	log.Infof(ctx, "loaded previous on-call states, %d entries loaded", len(rotations))
 	return nil
 } // }}}
 
