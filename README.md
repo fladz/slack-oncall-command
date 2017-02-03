@@ -9,14 +9,13 @@ There are different operations supported in this application:
 | Operation   | Parameter(s)                | Description                                                             | Permissions Required
 |-------------|:----------------------------|:-------------------------------------------------------------------------|:------|
 | `list`      | *team*                      | If *team* is provided, show the on-call list for the *team*. List all existing teams and operation manager(s) for each team if *team* is not provided.          | NORMAL+
-| `refresh`   |                             | Refresh the requested user's Slack profile. | NORMAL+
+| `update`    |                             | Update the requested user's Slack profile regardless of its age in cache. | NORMAL+
 | `add`       | *team @slackusername label* | Add *@slackusername* to be in that team’s on-call list, at the end. Optional *label* will be set for the *@slackusername*'s entry if given. | MANAGER+
 | `swap`      | *team position_A position_B*| Swap” the 2 staff in those positions.                                   | MANAGER+
 | `remove`    | *team  @slackusername*      | Remove @slackusername from that team’s on-call list.                    | MANAGER+
 | `flush`     | *team*                      | Remove all entries from that team’s on-call list.                       | MANAGER+
 | `register`  | *team @slackusername*       | Create a new team, and give *@slackusername* permissions to manage that *team*’s on-call list. `register` can also be used to add an additional manager to an existing team. | SUPERUSER
 | `unregister` | *team @slackusername*      | Remove *@slackusername* from being listed as that *team*’s manager, and remove *@slackusername*’s permissions to manage that *team*’s on-call list. If *@slackusername* is not specified, the entire *team* and it’s on-call list will be completely removed. | SUPERUSER
-| `refresh_admins` |                             | Refresh list of Slack admins. | SUPERUSER
 
 ## Permission Levels
 
@@ -24,7 +23,7 @@ There are 3 permission levels in this application:
 
 - NORMAL
 
-All Slack users are given this level. The only operations this level of users can run is `list` and `refresh`.
+All Slack users are given this level. The only operations this level of users can run are `list` and `update`.
 
 - MANAGER
 
@@ -33,7 +32,7 @@ This level of users can run all operations NORMAL users can run plus `add`, `rem
 
 - SUPERUSER
 
-This permission will be given to all Slack admins (member of @admins) by default. Individual *@slackusername* can also be given this permission level if the *@slackusername* is configured to be SUPERUSER. (See below "Configuration" section for more detail.) This level of users can run all operation MANAGER users can run plus `register`, `unregister` and `refresh_admins`.
+This permission will be given to all Slack admins (member of @admins) by default. Individual *@slackusername* can also be given this permission level if the *@slackusername* is configured to be SUPERUSER. (See below "Configuration" section for more detail.) This level of users can run all operation MANAGER users can run plus `register` and `unregister`.
 
 ## Configuration
 Below is a configuration options to be used inside *env_variables* section in the .yaml file:
