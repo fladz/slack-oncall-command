@@ -555,7 +555,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 
 	// The row already exists, do we need to add this manager?
 	if p.name == "" {
-		res.Text = fmt.Sprintf("Team %s has already been registered %s", p.team, humanErrorEmoji)
+		res.Text = fmt.Sprintf("Team %s is already registered %s", p.team, humanErrorEmoji)
 		return res
 	}
 
@@ -564,7 +564,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 	defer oncallMut.Unlock()
 	for _, m := range r.Managers {
 		if m.Id == p.id {
-			res.Text = fmt.Sprintf("Team %s, manager <@%s> has already been registered %s", p.team, p.name, humanErrorEmoji)
+			res.Text = fmt.Sprintf("Sorry, <@%s> is already a manager of %s %s", p.name, p.team, humanErrorEmoji)
 			return res
 		}
 	}
@@ -634,7 +634,7 @@ func unregister(ctx context.Context, params interface{}) slackResponse {
 				return res
 			}
 		}
-		res.Text = fmt.Sprintf("Team %s already unregistered from oncall command %s", p.team, humanErrorEmoji)
+		res.Text = fmt.Sprintf("Team %s is already unregistered %s", p.team, humanErrorEmoji)
 		return res
 	}
 
