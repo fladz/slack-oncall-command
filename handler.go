@@ -177,10 +177,10 @@ func help(ctx context.Context, scope string) string {
 	id, ok := ctx.Value(ctxKeyUserId).(string)
 	if ok {
 		if userIsExempt(ctx, id) {
-			return str + strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister, helpUpdate}, "\n")
+			return str + strings.Join([]string{helpList, helpUpdate, helpAdd, helpRemove, helpSwap, helpFlush, helpRegister, helpUnregister}, "\n")
 		}
 		if userIsManager(ctx, id) {
-			return str + strings.Join([]string{helpList, helpAdd, helpRemove, helpSwap, helpFlush, helpUpdate}, "\n")
+			return str + strings.Join([]string{helpList, helpUpdate, helpAdd, helpRemove, helpSwap, helpFlush}, "\n")
 		}
 	}
 	return str + strings.Join([]string{helpList, helpUpdate}, "\n")
