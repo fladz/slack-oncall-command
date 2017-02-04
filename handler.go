@@ -238,7 +238,7 @@ func add(ctx context.Context, params interface{}) slackResponse {
 		return res
 	}
 	if u == nil {
-		res.Text = fmt.Sprintf("<@%s> doesn't exist in Slack %s", p.name, humanErrorEmoji)
+		res.Text = fmt.Sprintf("Sorry! <@%s> doesn't exist in Slack %s", p.name, humanErrorEmoji)
 		return res
 	}
 
@@ -518,7 +518,7 @@ func register(ctx context.Context, params interface{}) slackResponse {
 			return res
 		}
 		if u == nil {
-			res.Text = fmt.Sprintf("<@%s> doesn't exist in Slack %s", externalErrorEmoji)
+			res.Text = fmt.Sprintf("Sorry! <@%s> doesn't exist in Slack %s", p.name, humanErrorEmoji)
 			return res
 		}
 	}
