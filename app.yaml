@@ -34,6 +34,12 @@ env_variables:
   demote_admins: "true"
 
   # [Optional]
+  # In case of external errors (ie. Slack API, Google Datastore) an error message "please contact @admins" will
+  # be displayed.
+  # If you want this "@admins" to be a "mention", fill the @admin's Sub-team ID.
+  admin_sub_team_id: "SUB_TEAM_ID"
+
+  # [Optional]
   # Duration to refresh Slack user cache.
   # Default 1 day.
   #user_cache_timeout: "3d"

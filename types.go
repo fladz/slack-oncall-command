@@ -105,6 +105,11 @@ var (
 	superusers []string
 	// Flag to tell us if Slack admins shouldn't be given superuser permission automatically.
 	adminDisabled bool
+	// Full name of "@admins" default Slack admin account.
+	// If sub-teamID is provided in configuration it'll be <!subteam^SUBTEAMID|@aminds>
+	// which will be displayed as "mention" and clickable.
+	// If sub-teamID is not provided, this will be a plain text of "@admins".
+	adminFullName string
 	// Emoji to be used when underprivileged users try to run permission-required
 	// commands, or invalid inputs.
 	humanErrorEmoji = ":exclamation:"

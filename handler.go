@@ -51,7 +51,7 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err = r.ParseForm(); err != nil {
 		log.Warningf(ctx, "error parsing request params from slack: %v", err)
-		fmt.Fprintf(w, errorExternal)
+		sendResponse(ctx, w, slackResponse{Text: errorExternal})
 		return
 	}
 	defer r.Body.Close()
@@ -61,21 +61,21 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	dec := schema.NewDecoder()
 	if err = dec.Decode(&sr, r.Form); err != nil {
 		log.Warningf(ctx, "error decoding request params: %s", err)
-		fmt.Fprintf(w, errorExternal)
+		sendResponse(ctx, w, slackResponse{Text: errorExternal})
 		return
 	}
 
 	// Make sure the token we received is what we expect.
 	if sr.Token != slackCommandToken {
 		log.Warningf(ctx, "invalid token %s", sr.Token)
-		fmt.Fprintf(w, errorExternal)
+		sendResponse(ctx, w, slackResponse{Text: errorExternal})
 		return
 	}
 
 	// Make sure the requested command is what we support.
 	if sr.Command != command {
 		log.Warningf(ctx, "unknown command %s, supported command - %s", sr.Command, command)
-		fmt.Fprintf(w, errorExternal)
+		sendResponse(ctx, w, slackResponse{Text: errorExternal})
 		return
 	}
 
@@ -87,13 +87,13 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	if len(rotations) == 0 {
 		if err = loadState(ctx); err != nil {
 			log.Warningf(ctx, "error loading oncall state - %s", err)
-			w.Write([]byte(errorExternal))
+			sendResponse(ctx, w, slackResponse{Text: errorExternal})
 			return
 		}
 		// Loaded information, let's set "manager" flag to users.
 		if err = loadManagers(ctx); err != nil {
 			log.Warningf(ctx, "error loading managers - %s", err)
-			w.Write([]byte(errorExternal))
+			sendResponse(ctx, w, slackResponse{Text: errorExternal})
 			return
 		}
 	}
@@ -105,10 +105,10 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 		case errorInput:
 			// In case of input errors, display help text for the operation
 			// they tried to run.
-			w.Write([]byte(help(ctx, operation)))
+			sendResponse(ctx, w, slackResponse{Text: help(ctx, operation)})
 		default:
 			// Anything else, print out the error string itself.
-			w.Write([]byte(errstr))
+			sendResponse(ctx, w, slackResponse{Text: errstr})
 		}
 		return
 	}
@@ -132,15 +132,13 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	case "update":
 		res = update(ctx, params)
 	default: // Dump available operations and params.
-		w.Write([]byte(help(ctx, "")))
+		sendResponse(ctx, w, slackResponse{Text: help(ctx, "")})
 		return
 	}
 
 	// Ok let's send it!
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		w.Write([]byte(errorExternal))
-	}
+	sendResponse(ctx, w, res)
+	return
 } // }}}
 
 // func help {{{
@@ -864,4 +862,15 @@ func getCurrentOncallList(ctx context.Context, row *oncallProperty) (changed boo
 	}
 
 	return
+} // }}}
+
+// func sendResponse {{{
+
+// Wrapper function to send response back to Slack.
+func sendResponse(ctx context.Context, w http.ResponseWriter, res slackResponse) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		// Failed sending JSON data, let's just send the error message then :(
+		w.Write([]byte(errorExternal))
+	}
 } // }}}

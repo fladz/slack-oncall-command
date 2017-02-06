@@ -56,6 +56,12 @@ func loadConfiguration() {
 			adminDisabled = true
 		}
 	}
+	// Generate "@admins" default Slack admin ID.
+	if tmp = os.Getenv("admin_sub_team_id"); tmp != "" {
+		adminFullName = "<!subteam^" + tmp + "|@admin>"
+	} else {
+		adminFullName = "@admin"
+	}
 	// For fun - use custom emoji's if configured.
 	if tmp = os.Getenv("input_error_emoji"); tmp != "" {
 		humanErrorEmoji = tmp
@@ -71,7 +77,7 @@ func loadConfiguration() {
 func setErrorText() {
 	errorInput = fmt.Sprintf("Invalid input %s", humanErrorEmoji)
 	errorNoPerm = fmt.Sprintf("Sorry! you can't do that %s", humanErrorEmoji)
-	errorExternal = fmt.Sprintf("Unexpected error occurred, please contact <@admins> %s", externalErrorEmoji)
+	errorExternal = fmt.Sprintf("Unexpected error occurred, please contact %s %s", adminFullName, externalErrorEmoji)
 	errorNoRotation = fmt.Sprintf("On-call list not set %s", humanErrorEmoji)
 	errorNoManager = fmt.Sprintf("Manager not set %s", humanErrorEmoji)
 	errorNoPhone = fmt.Sprintf("Phone not set %s", humanErrorEmoji)
