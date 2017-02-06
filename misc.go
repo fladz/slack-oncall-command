@@ -58,9 +58,9 @@ func loadConfiguration() {
 	}
 	// Generate "@admins" default Slack admin ID.
 	if tmp = os.Getenv("admin_sub_team_id"); tmp != "" {
-		adminFullName = "<!subteam^" + tmp + "|@admin>"
+		adminFullName = "<!subteam^" + tmp + "|@admins>"
 	} else {
-		adminFullName = "@admin"
+		adminFullName = "@admins"
 	}
 	// For fun - use custom emoji's if configured.
 	if tmp = os.Getenv("input_error_emoji"); tmp != "" {
