@@ -35,8 +35,8 @@ env_variables:
 
   # [Optional]
   # Duration to refresh Slack user cache.
-  # Default 3 days.
-  #cache_timeout: "3d"
+  # Default 1 day.
+  #user_cache_timeout: "3d"
 
   # [Optional]
   # Timezone used for on-call list updated date/time display.
