@@ -72,7 +72,7 @@ Once you have all prerequisites above ready, install this application
 
 Then deploy to your Google AppEngine project
 
-    $ goapp deploy -application {YOUR_PROJECT} -versiono go1 .
+    $ goapp deploy -application {YOUR_PROJECT} -version go1 .
 
 ## TODO
 
