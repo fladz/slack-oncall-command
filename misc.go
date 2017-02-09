@@ -158,7 +158,7 @@ func decodeListParams(ctx context.Context, stuff []string) (string, interface{},
 // This operation requires manager of the team or superuser permission.
 func decodeAddParams(ctx context.Context, r opRequestor, stuff []string) (string, interface{}, string) {
 	op := "add"
-	if len(stuff) < 3 || len(stuff) > 4 {
+	if len(stuff) < 3 {
 		log.Warningf(ctx, "(%s) invalid # of params - %v", op, stuff)
 		return op, nil, errorInput
 	}
@@ -174,8 +174,8 @@ func decodeAddParams(ctx context.Context, r opRequestor, stuff []string) (string
 		log.Warningf(ctx, "(%s) user %s has no perm", op, values.by.name)
 		return op, nil, errorNoPerm
 	}
-	if len(stuff) == 4 {
-		values.label = strings.ToLower(stuff[3])
+	if len(stuff) > 3 {
+		values.label = strings.ToLower(strings.Join(stuff[3:], " "))
 	}
 	return op, values, ""
 } // }}}
