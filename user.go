@@ -195,7 +195,8 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 			newuser, err := getSlackUser(ctx, id)
 			if err != nil {
 				// Error refreshing user cache, return current user data.
-				return user, err
+				log.Warningf(ctx, "error getting user profile from Slack, returning cached data (user=%s, age=%s, err=%s)", id, time.Since(user.retrieved), err)
+				return user, nil
 			}
 			// Reset the map value.
 			newuser.isSuperuser = user.isSuperuser
