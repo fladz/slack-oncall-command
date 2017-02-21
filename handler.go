@@ -49,18 +49,18 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel = context.WithTimeout(ctx, opTimeout)
 	defer cancel()
 
-	// If debug is enabled, print out request detail.
-	if debug {
-		log.Infof(ctx, "Request: Method=%s, URL=%v, Proto=%s, Host=%s, RemoteAddr=%s, RequestURI=%s, Header=%v, Form=%v",
-			r.Method, r.URL, r.Proto, r.Host, r.RemoteAddr, r.RequestURI, r.Header, r.Form)
-	}
-
 	if err = r.ParseForm(); err != nil {
 		log.Warningf(ctx, "error parsing request params from slack: %v", err)
 		sendResponse(ctx, w, slackResponse{Text: errorExternal})
 		return
 	}
 	defer r.Body.Close()
+
+	// If debug is enabled, print out request detail.
+	if debug {
+		log.Infof(ctx, "Request: Method=%s, URL=%v, Proto=%s, Host=%s, RemoteAddr=%s, RequestURI=%s, Header=%v, Form=%v",
+		r.Method, r.URL, r.Proto, r.Host, r.RemoteAddr, r.RequestURI, r.Header, r.Form)
+	}
 
 	// Decode the request params into our request struct.
 	var sr slackCommandParams
