@@ -16,6 +16,9 @@ import (
 func loadConfiguration() {
 	var err error
 	var tmp string
+	if tmp = os.Getenv("debug"); tmp == "true" {
+		debug = true
+	}
 	slackCommandToken = os.Getenv("slack_command_token")
 	slackAPIToken = os.Getenv("slack_api_token")
 	// Update command endpoint if defined.

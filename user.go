@@ -175,6 +175,10 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 			return user, err
 		}
 		if newuser == nil {
+			log.Warningf(ctx, "User no longer exists (%s)", id)
+			slackMut.Lock()
+			delete(slackUsers, id)
+			slackMut.Unlock()
 			return nil, nil
 		}
 		// Set new value in our user map.
@@ -198,13 +202,26 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 				log.Warningf(ctx, "error getting user profile from Slack, returning cached data (user=%s, age=%s, err=%s)", id, time.Since(user.retrieved), err)
 				return user, nil
 			}
+
+			if newuser == nil {
+				// User no longer exists!
+				slackMut.Lock()
+				delete(slackUsers, id)
+				slackMut.Unlock()
+				return nil, nil
+			}
+
 			// Reset the map value.
 			newuser.isSuperuser = user.isSuperuser
 			newuser.isManager = user.isManager
 			slackMut.Lock()
+			log.Infof(ctx, "refreshed old cached data: %+v, last=%s", newuser, user.retrieved.Format(dateFormat))
 			slackUsers[id] = newuser
 			slackMut.Unlock()
 			return newuser, nil
+		}
+		if debug {
+			log.Infof(ctx, "cache data still new (%s > %s), returning previous data: %+v", user.retrieved.Add(cacheTimeout).Format(dateFormat), time.Now().Format(dateFormat), user)
 		}
 		return user, nil
 	}
@@ -212,16 +229,15 @@ func getSlackUserDetail(ctx context.Context, id string, force bool) (*slackUser,
 	// User not exists :(
 	// Let's check Slack on this..
 	if user, err = getSlackUser(ctx, id); err != nil {
+		log.Warningf(ctx, "error getting user info from slack (%s) %s", id, err)
 		return nil, err
 	}
 	if user == nil {
-		slackMut.Lock()
-		delete(slackUsers, id)
-		slackMut.Unlock()
 		return nil, nil
 	}
 
 	// Got the info, let's save and return.
+	log.Infof(ctx, "got new user data: %+v", user)
 	slackMut.Lock()
 	slackUsers[id] = user
 	slackMut.Unlock()

@@ -88,6 +88,8 @@ const (
 )
 
 var (
+	// Flag to tell us if additional logging is needed.
+	debug bool
 	// Token used to verify identity of incoming oncall requests from Slack.
 	slackCommandToken string
 	// Token used to call Slack API.

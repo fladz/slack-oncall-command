@@ -49,6 +49,12 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel = context.WithTimeout(ctx, opTimeout)
 	defer cancel()
 
+	// If debug is enabled, print out request detail.
+	if debug {
+		log.Infof(ctx, "Request: Method=%s, URL=%v, Proto=%s, Host=%s, RemoteAddr=%s, RequestURI=%s, Header=%v, Form=%v",
+			r.Method, r.URL, r.Proto, r.Host, r.RemoteAddr, r.RequestURI, r.Header, r.Form)
+	}
+
 	if err = r.ParseForm(); err != nil {
 		log.Warningf(ctx, "error parsing request params from slack: %v", err)
 		sendResponse(ctx, w, slackResponse{Text: errorExternal})
@@ -822,6 +828,9 @@ func getCurrentManagerOncallList(ctx context.Context, row *oncallProperty) (chan
 			idx--
 		} else {
 			if err != nil || user.phone == "" {
+				if err != nil {
+					log.Warningf(ctx, "Error getting manager info (%s) %s, leave phone empty", m.Name, err)
+				}
 				str = append(str, fmt.Sprintf("Manager: <@%s> %s", m.Name, errorNoPhone))
 			} else {
 				str = append(str, fmt.Sprintf("Manager: <@%s> %s", m.Name, user.phone))
@@ -844,12 +853,16 @@ func getCurrentOncallList(ctx context.Context, row *oncallProperty) (changed boo
 		var userstr string
 		if err == nil && user == nil {
 			// User doesn't exist in Slack, remove from list.
+			log.Warningf(ctx, "User %s not exists in Slack, removing from list", u.Name)
 			row.Rotations = append(row.Rotations[:idx], row.Rotations[idx+1:]...)
 			changed = true
 			idx--
 		} else {
 			userstr = fmt.Sprintf("%d: <@%s> ", idx+1, u.Name)
 			if err != nil || user.phone == "" {
+				if err != nil {
+					log.Warningf(ctx, "Error getting user from slack (%s) %s, leave phone empty", u.Name, err)
+				}
 				userstr += errorNoPhone
 			} else {
 				userstr += user.phone
@@ -869,6 +882,12 @@ func getCurrentOncallList(ctx context.Context, row *oncallProperty) (changed boo
 // Wrapper function to send response back to Slack.
 func sendResponse(ctx context.Context, w http.ResponseWriter, res slackResponse) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// If debugging is enabled, print out response values.
+	if debug {
+		log.Infof(ctx, "Response: %+v", res)
+	}
+
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		// Failed sending JSON data, let's just send the error message then :(
 		w.Write([]byte(errorExternal))
