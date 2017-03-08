@@ -59,7 +59,7 @@ func oncallHandler(w http.ResponseWriter, r *http.Request) {
 	// If debug is enabled, print out request detail.
 	if debug {
 		log.Infof(ctx, "Request: Method=%s, URL=%v, Proto=%s, Host=%s, RemoteAddr=%s, RequestURI=%s, Header=%v, Form=%v",
-		r.Method, r.URL, r.Proto, r.Host, r.RemoteAddr, r.RequestURI, r.Header, r.Form)
+			r.Method, r.URL, r.Proto, r.Host, r.RemoteAddr, r.RequestURI, r.Header, r.Form)
 	}
 
 	// Decode the request params into our request struct.
@@ -711,9 +711,9 @@ func listTeams(ctx context.Context) slackResponse {
 		for _, manager := range r.Managers {
 			// Get user info.
 			if user, err = getSlackUserDetail(ctx, manager.Id, false); err != nil || user == nil || user.phone == "" {
-				str = append(str, fmt.Sprintf("%s: <@%s> %s", r.Team, manager.Name, errorNoPhone))
+				str = append(str, fmt.Sprintf("%s: <@%s|%s> :dir_phone: %s", r.Team, manager.Id, manager.Name, errorNoPhone))
 			} else {
-				str = append(str, fmt.Sprintf("%s: <@%s> %s", strings.ToUpper(r.Team), manager.Name, user.phone))
+				str = append(str, fmt.Sprintf("%s: <@%s|%s> :dir_phone: %s", strings.ToUpper(r.Team), manager.Id, manager.Name, user.phone))
 			}
 		}
 	}
@@ -831,9 +831,9 @@ func getCurrentManagerOncallList(ctx context.Context, row *oncallProperty) (chan
 				if err != nil {
 					log.Warningf(ctx, "Error getting manager info (%s) %s, leave phone empty", m.Name, err)
 				}
-				str = append(str, fmt.Sprintf("Manager: <@%s> %s", m.Name, errorNoPhone))
+				str = append(str, fmt.Sprintf("Manager: <@%s|%s> :dir_phone: %s", m.Id, m.Name, errorNoPhone))
 			} else {
-				str = append(str, fmt.Sprintf("Manager: <@%s> %s", m.Name, user.phone))
+				str = append(str, fmt.Sprintf("Manager: <@%s|%s> :dir_phone: %s", m.Id, m.Name, user.phone))
 			}
 		}
 	}
@@ -858,7 +858,7 @@ func getCurrentOncallList(ctx context.Context, row *oncallProperty) (changed boo
 			changed = true
 			idx--
 		} else {
-			userstr = fmt.Sprintf("%d: <@%s> ", idx+1, u.Name)
+			userstr = fmt.Sprintf("%d: <@%s|%s> :dir_phone: ", idx+1, u.Id, u.Name)
 			if err != nil || user.phone == "" {
 				if err != nil {
 					log.Warningf(ctx, "Error getting user from slack (%s) %s, leave phone empty", u.Name, err)
